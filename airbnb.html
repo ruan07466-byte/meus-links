@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meus anúncios no Airbnb</title>
+<style>
+  :root{
+    --bg:#fbf8f6; --ink:#222; --muted:#717171; --card:#fff; --line:#ebe5e0;
+    --rausch:#ff385c; --rausch2:#e31c5f;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#161313; --ink:#f5efec; --muted:#a29a96; --card:#201c1c; --line:#322d2d; }
+  }
+  *{box-sizing:border-box;margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:36px 18px 60px;display:flex;justify-content:center}
+  main{width:100%;max-width:560px}
+  header{text-align:center;margin-bottom:26px}
+  .logo{width:54px;height:54px;border-radius:16px;background:var(--rausch);display:grid;place-items:center;font-size:26px;margin:0 auto 14px}
+  h1{font-size:26px;letter-spacing:-.02em}
+  .sub{color:var(--muted);margin-top:6px;line-height:1.45;font-size:15px}
+  .list{display:flex;flex-direction:column;gap:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 2px 10px #0000000a}
+  .cover{height:150px;background:linear-gradient(135deg,#ff385c,#ff9a5c);background-size:cover;background-position:center;display:flex;align-items:flex-end;padding:12px}
+  .badge{background:#fffffff0;color:#222;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px}
+  .body{padding:16px}
+  .body h2{font-size:18px}
+  .place{color:var(--muted);font-size:14px;margin-top:3px}
+  .desc{font-size:14px;line-height:1.45;margin-top:10px}
+  .meta{display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:10px;flex-wrap:wrap}
+  .price b{font-size:18px}
+  .price span{color:var(--muted);font-size:13px}
+  .btns{display:flex;gap:8px}
+  .btn{font:inherit;font-size:14px;font-weight:600;border:0;border-radius:12px;padding:10px 16px;cursor:pointer;text-decoration:none;display:inline-block}
+  .go{background:linear-gradient(90deg,var(--rausch),var(--rausch2));color:#fff}
+  .go:hover{filter:brightness(1.07)}
+  .cp{background:none;border:1.5px solid var(--line);color:var(--ink)}
+  .cp:hover{border-color:var(--ink)}
+  .empty{text-align:center;color:var(--muted);padding:30px 0}
+  .tools{text-align:center;margin-top:28px}
+  .ghost{font:inherit;font-size:13px;color:var(--muted);background:none;border:1.5px dashed var(--line);border-radius:999px;padding:7px 14px;cursor:pointer}
+  .ghost:hover{color:var(--ink);border-color:var(--ink)}
+  /* editor */
+  #editor{display:none;margin-top:20px}
+  #editor.on{display:block}
+  .ed{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .ed .full{grid-column:span 2}
+  .ed label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:3px}
+  input,textarea{font:inherit;font-size:14px;width:100%;padding:8px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);min-width:0}
+  textarea{resize:vertical;min-height:54px}
+  .del{grid-column:span 2;color:#d33;border-color:#d3333355}
+  .actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:9px 16px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s}
+  .toast.on{opacity:1}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="logo">🏡</div>
+    <h1 id="title">Meus anúncios no Airbnb</h1>
+    <p class="sub" id="sub">Escolha seu lugar e reserve direto pelo Airbnb.</p>
+  </header>
+
+  <section class="list" id="list"></section>
+
+  <div class="tools"><button class="ghost" id="toggle">✎ editar anúncios</button></div>
+
+  <section id="editor">
+    <div class="ed">
+      <div class="full"><label>Título da página</label><input id="inTitle"></div>
+      <div class="full"><label>Subtítulo</label><input id="inSub"></div>
+    </div>
+    <div id="eds"></div>
+    <div class="actions">
+      <button class="ghost" id="add">+ novo anúncio</button>
+      <button class="ghost" id="reset">restaurar padrão</button>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast">Link copiado!</div>
+
+<script>
+const KEY = "airbnb-links-v2";
+
+// Seus anúncios. Edite aqui ou use o botão "editar anúncios" na página.
+const DEFAULT = {
+  title: "Meus anúncios no Airbnb",
+  sub: "Escolha seu lugar e reserve direto pelo Airbnb.",
+  items: [
+    { name:"Conforto em JP Cabo Branco • Apto Buenos Ayres", place:"João Pessoa · Cabo Branco", price:"", unit:"",
+      desc:"Apartamento inteiro, tranquilo e familiar, perto da praia de Cabo Branco, com comércio, restaurantes e farmácias a pé.",
+      url:"https://www.airbnb.com.br/rooms/1538535624104788351",
+      img:"https://a0.muscache.com/im/pictures/hosting/Hosting-1538535624104788351/original/53d55668-05f7-40f0-8c49-cf623a5c2c21.jpeg?im_w=720&width=720&quality=70&auto=webp", tag:"" },
+    { name:"Flat aconchegante pertinho do mar", place:"João Pessoa · perto de Cabo Branco e Tambaú", price:"", unit:"",
+      desc:"Flat com piscina compartilhada, cozinha, wi-fi, estacionamento gratuito e varanda, a poucos passos das praias.",
+      url:"https://www.airbnb.com.br/rooms/568254526783920147",
+      img:"https://a0.muscache.com/im/pictures/miso/Hosting-568254526783920147/original/94f2236a-f5b0-4403-87b4-834c18f71a18.jpeg?im_w=720&width=720&quality=70&auto=webp", tag:"" }
+  ]
+};
+
+const clone = o => JSON.parse(JSON.stringify(o));
+let data = load();
+function load(){ try{ const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.items) return s; }catch(e){} return clone(DEFAULT); }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){} }
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safeUrl = u => /^https?:\/\//i.test(u) ? u : "https://" + String(u||"").replace(/^\/+/, "");
+const cssUrl = u => /^https?:\/\//i.test(u) ? `url("${encodeURI(u).replace(/"/g,"%22")}")` : "";
+
+function renderPage(){
+  $("title").textContent = data.title; document.title = data.title;
+  $("sub").textContent = data.sub;
+  $("list").innerHTML = data.items.length ? data.items.map((it,i) => `
+    <article class="card">
+      <div class="cover" style="${it.img ? `background-image:${cssUrl(it.img)}, linear-gradient(135deg,#ff385c,#ff9a5c)` : ""}">${it.tag ? `<span class="badge">${esc(it.tag)}</span>` : ""}</div>
+      <div class="body">
+        <h2>${esc(it.name)}</h2>
+        <div class="place">📍 ${esc(it.place)}</div>
+        ${it.desc ? `<p class="desc">${esc(it.desc)}</p>` : ""}
+        <div class="meta">
+          <div class="price">${it.price ? `<b>${esc(it.price)}</b> <span>${esc(it.unit)}</span>` : ""}</div>
+          <div class="btns">
+            <button class="btn cp" data-copy="${i}">Copiar link</button>
+            <a class="btn go" href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener">Ver no Airbnb</a>
+          </div>
+        </div>
+      </div>
+    </article>`).join("") : `<p class="empty">Nenhum anúncio ainda.</p>`;
+}
+
+const FIELDS = [["name","Nome do anúncio",1],["place","Local",1],["price","Preço (ex.: R$ 180)"],["unit","Unidade (ex.: / noite)"],
+  ["url","Link do Airbnb",1],["img","URL da foto de capa (opcional)",1],["tag","Selo (opcional)"],["desc","Descrição",1,"ta"]];
+
+function renderEditor(){
+  $("inTitle").value = data.title; $("inSub").value = data.sub;
+  $("eds").innerHTML = data.items.map((it,i) => `
+    <div class="ed">
+      ${FIELDS.map(([k,l,full,ta]) => `<div class="${full?"full":""}"><label>${l}</label>${
+        ta ? `<textarea data-i="${i}" data-k="${k}">${esc(it[k])}</textarea>`
+           : `<input data-i="${i}" data-k="${k}" value="${esc(it[k])}">`}</div>`).join("")}
+      <button class="btn cp del" data-del="${i}">Remover anúncio</button>
+    </div>`).join("");
+}
+
+$("eds").addEventListener("input", e => { const t=e.target; if(!t.dataset.k) return; data.items[t.dataset.i][t.dataset.k]=t.value; save(); renderPage(); });
+$("eds").addEventListener("click", e => { const i=e.target.dataset.del; if(i===undefined) return; data.items.splice(i,1); save(); renderEditor(); renderPage(); });
+$("inTitle").oninput = e => { data.title=e.target.value; save(); renderPage(); };
+$("inSub").oninput = e => { data.sub=e.target.value; save(); renderPage(); };
+$("add").onclick = () => { data.items.push({name:"Novo anúncio",place:"",price:"",unit:"/ noite",desc:"",url:"https://www.airbnb.com.br/rooms/",img:"",tag:""}); save(); renderEditor(); renderPage(); };
+$("reset").onclick = () => { if(confirm("Restaurar os anúncios padrão? Seus anúncios atuais serão apagados.")){ data=clone(DEFAULT); save(); renderEditor(); renderPage(); } };
+$("toggle").onclick = () => { const on=$("editor").classList.toggle("on"); $("toggle").textContent = on ? "✓ pronto" : "✎ editar anúncios"; };
+
+$("list").addEventListener("click", async e => {
+  const i = e.target.dataset.copy; if(i===undefined) return;
+  const url = safeUrl(data.items[i].url);
+  try { await navigator.clipboard.writeText(url); } catch(_) {
+    const t=document.createElement("textarea"); t.value=url; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove();
+  }
+  const el=$("toast"); el.classList.add("on"); setTimeout(()=>el.classList.remove("on"),1400);
+});
+
+renderPage(); renderEditor();
+</script>
+</body>
+</html>
