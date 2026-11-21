@@ -37,19 +37,6 @@
   .cp{background:none;border:1.5px solid var(--line);color:var(--ink)}
   .cp:hover{border-color:var(--ink)}
   .empty{text-align:center;color:var(--muted);padding:30px 0}
-  .tools{text-align:center;margin-top:28px}
-  .ghost{font:inherit;font-size:13px;color:var(--muted);background:none;border:1.5px dashed var(--line);border-radius:999px;padding:7px 14px;cursor:pointer}
-  .ghost:hover{color:var(--ink);border-color:var(--ink)}
-  /* editor */
-  #editor{display:none;margin-top:20px}
-  #editor.on{display:block}
-  .ed{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .ed .full{grid-column:span 2}
-  .ed label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:3px}
-  input,textarea{font:inherit;font-size:14px;width:100%;padding:8px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);min-width:0}
-  textarea{resize:vertical;min-height:54px}
-  .del{grid-column:span 2;color:#d33;border-color:#d3333355}
-  .actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px}
   .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:9px 16px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s}
   .toast.on{opacity:1}
 </style>
@@ -64,27 +51,13 @@
 
   <section class="list" id="list"></section>
 
-  <div class="tools"><button class="ghost" id="toggle">✎ editar anúncios</button></div>
 
-  <section id="editor">
-    <div class="ed">
-      <div class="full"><label>Título da página</label><input id="inTitle"></div>
-      <div class="full"><label>Subtítulo</label><input id="inSub"></div>
-    </div>
-    <div id="eds"></div>
-    <div class="actions">
-      <button class="ghost" id="add">+ novo anúncio</button>
-      <button class="ghost" id="reset">restaurar padrão</button>
-    </div>
-  </section>
 </main>
 <div class="toast" id="toast">Link copiado!</div>
 
 <script>
-const KEY = "airbnb-links-v2";
-
-// Seus anúncios. Edite aqui ou use o botão "editar anúncios" na página.
-const DEFAULT = {
+// Seus anúncios: para mudar algo, edite os dados abaixo.
+const data = {
   title: "Meus anúncios no Airbnb",
   sub: "Escolha seu lugar e reserve direto pelo Airbnb.",
   items: [
@@ -99,10 +72,6 @@ const DEFAULT = {
   ]
 };
 
-const clone = o => JSON.parse(JSON.stringify(o));
-let data = load();
-function load(){ try{ const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.items) return s; }catch(e){} return clone(DEFAULT); }
-function save(){ try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){} }
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -130,28 +99,6 @@ function renderPage(){
     </article>`).join("") : `<p class="empty">Nenhum anúncio ainda.</p>`;
 }
 
-const FIELDS = [["name","Nome do anúncio",1],["place","Local",1],["price","Preço (ex.: R$ 180)"],["unit","Unidade (ex.: / noite)"],
-  ["url","Link do Airbnb",1],["img","URL da foto de capa (opcional)",1],["tag","Selo (opcional)"],["desc","Descrição",1,"ta"]];
-
-function renderEditor(){
-  $("inTitle").value = data.title; $("inSub").value = data.sub;
-  $("eds").innerHTML = data.items.map((it,i) => `
-    <div class="ed">
-      ${FIELDS.map(([k,l,full,ta]) => `<div class="${full?"full":""}"><label>${l}</label>${
-        ta ? `<textarea data-i="${i}" data-k="${k}">${esc(it[k])}</textarea>`
-           : `<input data-i="${i}" data-k="${k}" value="${esc(it[k])}">`}</div>`).join("")}
-      <button class="btn cp del" data-del="${i}">Remover anúncio</button>
-    </div>`).join("");
-}
-
-$("eds").addEventListener("input", e => { const t=e.target; if(!t.dataset.k) return; data.items[t.dataset.i][t.dataset.k]=t.value; save(); renderPage(); });
-$("eds").addEventListener("click", e => { const i=e.target.dataset.del; if(i===undefined) return; data.items.splice(i,1); save(); renderEditor(); renderPage(); });
-$("inTitle").oninput = e => { data.title=e.target.value; save(); renderPage(); };
-$("inSub").oninput = e => { data.sub=e.target.value; save(); renderPage(); };
-$("add").onclick = () => { data.items.push({name:"Novo anúncio",place:"",price:"",unit:"/ noite",desc:"",url:"https://www.airbnb.com.br/rooms/",img:"",tag:""}); save(); renderEditor(); renderPage(); };
-$("reset").onclick = () => { if(confirm("Restaurar os anúncios padrão? Seus anúncios atuais serão apagados.")){ data=clone(DEFAULT); save(); renderEditor(); renderPage(); } };
-$("toggle").onclick = () => { const on=$("editor").classList.toggle("on"); $("toggle").textContent = on ? "✓ pronto" : "✎ editar anúncios"; };
-
 $("list").addEventListener("click", async e => {
   const i = e.target.dataset.copy; if(i===undefined) return;
   const url = safeUrl(data.items[i].url);
@@ -161,7 +108,7 @@ $("list").addEventListener("click", async e => {
   const el=$("toast"); el.classList.add("on"); setTimeout(()=>el.classList.remove("on"),1400);
 });
 
-renderPage(); renderEditor();
+renderPage();
 </script>
 </body>
 </html>
